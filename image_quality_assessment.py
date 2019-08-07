@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import math
-
+# 2019/08/01
 
 """
 Sharpness detection
