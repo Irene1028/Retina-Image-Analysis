@@ -16,10 +16,11 @@ Output: None
 """
 
 
-def random_image_crop(im_path, crop_shape, N):
+def random_image_crop(img, img_path, crop_shape, N):
 
-    img = cv2.imread(im_path, 0)  # this image should be preprocessed gray images
-    filename = im_path.split('/')[-1]
+    # img_path is the full path of img
+    img_name = img_path.split('/')[-1]  # img_name is like "MAXdjfirueb.jpg"
+    filename = img_name.split('.')[0]  # filename is like "MAXdjfirueb"
 
     # height and width of original image
     org_shape = np.shape(img)
@@ -33,24 +34,22 @@ def random_image_crop(im_path, crop_shape, N):
 
         # create, save and show image_crop
         image_crop = np.array(img[new_y:new_y + crop_shape[0], new_x:new_x + crop_shape[1]])
-        cv2.imwrite("crop/" + str(index) + "_" + filename, image_crop)
-        print("------------New points for each index----------")
-        print(index)
-        # print(new_x)
-        # print(new_x + crop_shape[1])
-        # print(new_y)
-        # print(new_y + crop_shape[0])
-        # crop txt
-        new_points = crop_XY_coordinates(im_path.split('/')[0] + "/XYcoordinates/" + filename.replace(".jpg", ".txt"),
-                            new_x, new_y, crop_shape, index)
-        print(new_points)
-        for p in new_points:
-            cv2.circle(image_crop, (p[0], p[1]), 2, (255, 255, 255), 0)
-            # print(p[0])
+        new_filename = filename + "_" + str(index)
+        cv2.imwrite("crop/" + new_filename + ".jpg", image_crop)
+        # print("------------New points for each index----------")
 
-        cv2.imshow("crop image", image_crop)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # crop txt
+        new_points = crop_XY_coordinates(im_path.split('/')[0] + "/XYcoordinates_josh_compressed_notscaled_DONT_USE/XYcoordinates_josh_original_patch_1/" + img_name.replace(".jpg", ".txt"),
+                            new_x, new_y, crop_shape, index)
+        crop_density_map("density_map_processed_josh_original/density_map_processed_josh_original_patch_1/" + filename + ".txt", new_y, new_x, crop_shape, index)
+        # print(new_points)
+        # for p in new_points:
+        #     cv2.circle(image_crop, (p[0], p[1]), 2, (255, 0, 0), 0)
+        #     # print(p[0])
+        #
+        # cv2.imshow("crop image", image_crop)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
 
 
 """
@@ -72,7 +71,10 @@ def crop_XY_coordinates(txt_path, new_x, new_y, crop_shape, index):
     new_points = np.array(new_points)
     new_points[:, 0] = new_points[:, 0] - new_x
     new_points[:, 1] = new_points[:, 1] - new_y
-    new_txt_path = str(index) + "_" + txt_path.split('/')[-1]
+
+    # txt_path is the full path of XY
+    txt_name = txt_path.split('/')[-1]  # new_txt_path is "MAXfjuaih.txt"
+    new_txt_path = "crop_XY/" + txt_name.split('.')[0] + "_" + str(index) + ".txt"
     with open(new_txt_path, 'w') as file:
         for p in new_points:
             write_str = '%d %d\n' % (p[0], p[1])
@@ -81,7 +83,37 @@ def crop_XY_coordinates(txt_path, new_x, new_y, crop_shape, index):
     return new_points
 
 
+"""
+crop_densitymap()
+
+"""
+
+def crop_density_map(map_path, new_y, new_x, crop_shape, index):
+    map_name = map_path.split('/')[-1]
+    filename = map_name.split('.')[0]
+    dmap = np.loadtxt(map_path)
+    dmap_crop = np.array(dmap[new_y:new_y + crop_shape[0], new_x:new_x + crop_shape[1]])
+    np.savetxt("crop_map/" + filename + "_" + str(index) + ".txt", dmap_crop)
+
+    # file = open('crop_map/result.txt', 'w')
+    # file.write(str(dmap_crop));
+    # file.close()
+
+
 if __name__ == "__main__":
 
-    random_image_crop('for dot annotation/MAX_BALBC 6m ND ph H 0004-1 ph.jpg', (500, 500), 15)
+    with open('all_processed_with_coords/redo_josh_new_md4/josh_processed_original_patch1/ls.txt') as f:
+        paths = f.readlines()
+    # print(paths)
+    for path in paths:
+        im_path = 'all_processed_with_coords/redo_josh_new_md4/josh_processed_original_patch1/' + path.strip('\n')
+        print(im_path)
+    #     im_path = 'all_processed_with_coords/redo_josh_new_md4/josh_processed_original_patch1/zoi_vim_ph_0uMHQ11x_20x_00004-nd2-T-0-1.jpg'
+        img = cv2.imread(im_path, 0)  # this image should be preprocessed gray images
+        if img.size == 0:
+            continue
+        if img.shape[0] >= 800 and img.shape[1] >= 800:
+            print("---------------- Start Cropping ---------------")
+            random_image_crop(img, im_path, (500, 500), 15)
 
+# zoi_vim_ph_0uMHQ11x_20x_00004.nd2-T=0-1.txt not found
